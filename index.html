@@ -2,78 +2,484 @@
 <html><head><title>Milliarium Electronicum</title>
 <script type="text/javascript">
 vias = [
-["New York", 40.768056, -73.981944],
-["London", 51.507414, -0.127681],
-["Paris", 48.853410, 2.348803],
-["Tokyo", 35.684048, 139.774488]];
-thetas = {};
+  ["New York", 40.768056, -73.981944],
+  ["London", 51.507414, -0.127681],
+  ["Paris", 48.853410, 2.348803],
+  ["Tokyo", 35.684048, 139.774488]
+];
+
+const A_WGS84 = 6378137;
+const F_WGS84 = 1/298.257223563;
+
+var latitude;
+var logitude;
+
 function lambertdist(inlat0, inlon0, inlat1, inlon1) {
-    const A_WGS84 = 6378137;
-    const F_WGS84 = 1/298.257223563;
     lat0 = inlat0 * Math.PI / 180;
     lon0 = inlon0 * Math.PI / 180;
     lat1 = inlat1 * Math.PI / 180;
     lon1 = inlon1 * Math.PI / 180;
-    p0 = Math.atan( (1-F_WGS84)*Math.tan(lat0));
-    p1 = Math.atan( (1-F_WGS84)*Math.tan(lat1));
+    p0 = Math.atan((1-F_WGS84)*Math.tan(lat0));
+    p1 = Math.atan((1-F_WGS84)*Math.tan(lat1));
     rho = Math.acos(Math.sin(p0)*Math.sin(p1)+Math.cos(p0)*Math.cos(p1)*Math.cos(lon1-lon0));
     x = (rho - Math.sin(rho)) * (Math.sin(p0)+Math.sin(p1))**2 / Math.cos(rho/2)**2;
     y = (rho + Math.sin(rho)) * (Math.sin(p0)-Math.sin(p1))**2 / Math.sin(rho/2)**2;
     return A_WGS84 * (rho - F_WGS84 * (x+y) / 8) / 1000;
 }
-function spheredist(inlat0, inlon0, inlat1, inlon1) {
+
+function sphereangle(inlat0, inlon0, inlat1, inlon1) {
     lat0 = inlat0 * Math.PI / 180;
     lon0 = inlon0 * Math.PI / 180;
     lat1 = inlat1 * Math.PI / 180;
     lon1 = inlon1 * Math.PI / 180;
-    rho = Math.acos(Math.sin(lat0)*Math.sin(lat1)+Math.cos(lat0)*Math.cos(lat1)*Math.cos(lon1-lon0));
-    return 6371 * rho;
+    return Math.acos(Math.sin(lat0)*Math.sin(lat1)+Math.cos(lat0)*Math.cos(lat1)*Math.cos(lon1-lon0));
 }
-function calctheta(inlat0, inlon0, inlat1, inlon1) {
-    lat0 = inlat0 * Math.PI / 180;
-    lon0 = inlon0 * Math.PI / 180;
-    lat1 = inlat1 * Math.PI / 180;
-    lon1 = inlon1 * Math.PI / 180;
-    return Math.atan2(Math.cos(lat1)*Math.sin(lon1-lon0),
-                      Math.cos(lat0)*Math.sin(lat1) - Math.sin(lat0)*Math.cos(lat1)*Math.cos(lon1-lon0));
+
+function geocentriclat(geodeticlat) {
+    return (180/Math.PI) * Math.atan((1-F_WGS84)*Math.tan(geodeticlat * Math.PI/180));
 }
-function canvas_arrow(context, angle){
-    var headlen = 10;   // length of head in pixels
-    fromx = 50; fromy = 50;
-    tox = 50+50*Math.cos(angle);
-    toy = 50+50*Math.sin(angle);
-    context.clearRect(0, 0, 100, 100);
-    context.beginPath();
-    context.moveTo(fromx, fromy);
-    context.lineTo(tox, toy);
-    context.lineTo(tox-headlen*Math.cos(angle-Math.PI/6),toy-headlen*Math.sin(angle-Math.PI/6));
-    context.moveTo(tox, toy);
-    context.lineTo(tox-headlen*Math.cos(angle+Math.PI/6),toy-headlen*Math.sin(angle+Math.PI/6));
-    context.stroke();
+
+function radiusat(inlat) {
+    lat = geocentriclat(inlat) * Math.PI/180;
+    return Math.sqrt(A_WGS84*A_WGS84*(Math.cos(lat)*Math.cos(lat) +
+                                      (1-F_WGS84)*(1-F_WGS84)*Math.sin(lat)*Math.sin(lat))) / 1000;
+}                     
+
+function mooncoords() {
+    T = (2440587.5 + (Date.now()/86400000) + 69/86400 - 2451545) / 36525;
+    T2 = T * T; T3 = T2 * T; T4 = T3 * T;
+    ddeg = (297.8502042 + 445267.1115168 * T - 0.00163 * T2 + T3 / 545868 - T4 / 113065000) % 360;
+    d = ddeg * Math.PI/180;
+    ldeg = (134.9634114 + 477198.8676313 * T + 0.008997 * T2 + T3 / 69699 - T4 / 14712000) % 360;
+    l = ldeg * Math.PI/180;
+    l1deg = (357.5291092 + 35999.0502909 * T - 0.0001536 * T2 + T3 / 24490000) % 360;
+    l1 = l1deg * Math.PI/180;
+    fdeg = (93.2720993 + 483202.0175273 * T - 0.0034029 * T2 - T3/3526000 + T4 / 863310000) % 360;
+    f = fdeg * Math.PI/180;
+    centerdist = 385000.52719 + 
+        -3.14837*Math.cos(2*f) + 
+        79.66183*Math.cos(1*l + -2*f) + 
+        -20905.32206*Math.cos(1*l) + 
+        -0.10326*Math.cos(1*l + 2*f) + 
+        -4.42124*Math.cos(2*l + -2*f) + 
+        -569.92332*Math.cos(2*l) + 
+        -23.21032*Math.cos(3*l) + 
+        -1.11693*Math.cos(4*l) + 
+        -0.05888*Math.cos(5*l) + 
+        -0.02674*Math.cos(1*l1 + -4*l) + 
+        -0.42242*Math.cos(1*l1 + -3*l) + 
+        -7.00293*Math.cos(1*l1 + -2*l) + 
+        -0.05020*Math.cos(1*l1 + -2*l + 2*f) + 
+        -129.62476*Math.cos(1*l1 + -1*l) + 
+        0.33465*Math.cos(1*l1 + -1*l + 2*f) + 
+        -0.18568*Math.cos(1*l1 + -2*f) + 
+        48.89010*Math.cos(1*l1) + 
+        -0.15803*Math.cos(1*l1 + 2*f) + 
+        -0.24811*Math.cos(1*l1 + 1*l + -2*f) + 
+        104.75896*Math.cos(1*l1 + 1*l) + 
+        0.03265*Math.cos(1*l1 + 2*l + -2*f) + 
+        5.75105*Math.cos(1*l1 + 2*l) + 
+        0.35509*Math.cos(1*l1 + 3*l) + 
+        0.02304*Math.cos(1*l1 + 4*l) + 
+        -0.13618*Math.cos(2*l1 + -2*l) + 
+        -2.11728*Math.cos(2*l1 + -1*l) + 
+        1.06575*Math.cos(2*l1) + 
+        1.16562*Math.cos(2*l1 + 1*l) + 
+        0.05072*Math.cos(2*l1 + 2*l) + 
+        -0.03894*Math.cos(3*l1 + -1*l) + 
+        0.02127*Math.cos(3*l1) + 
+        0.01912*Math.cos(3*l1 + 1*l) + 
+        -0.02948*Math.cos(1*d + -2*l1) + 
+        0.11411*Math.cos(1*d + -1*l1 + -1*l) + 
+        -0.01366*Math.cos(1*d + -1*l1 + -2*f) + 
+        0.49757*Math.cos(1*d + -1*l1) + 
+        0.10998*Math.cos(1*d + -1*l1 + 1*l) + 
+        0.01121*Math.cos(1*d + -1*l1 + 2*l) + 
+        -0.09938*Math.cos(1*d + -3*l) + 
+        -1.73852*Math.cos(1*d + -2*l) + 
+        -0.04232*Math.cos(1*d + -1*l + -2*f) + 
+        -8.37909*Math.cos(1*d + -1*l) + 
+        -0.02471*Math.cos(1*d + -1*l + 2*f) + 
+        -0.79564*Math.cos(1*d + -2*f) + 
+        108.74265*Math.cos(1*d) + 
+        -0.01874*Math.cos(1*d + 2*f) + 
+        0.06055*Math.cos(1*d + 1*l + -2*f) + 
+        6.32199*Math.cos(1*d + 1*l) + 
+        0.37852*Math.cos(1*d + 2*l) + 
+        0.02368*Math.cos(1*d + 3*l) + 
+        0.01729*Math.cos(1*d + 1*l1 + -3*l) + 
+        0.33226*Math.cos(1*d + 1*l1 + -2*l) + 
+        0.85127*Math.cos(1*d + 1*l1 + -1*l) + 
+        0.03379*Math.cos(1*d + 1*l1 + -2*f) + 
+        -16.67533*Math.cos(1*d + 1*l1) + 
+        -0.93335*Math.cos(1*d + 1*l1 + 1*l) + 
+        -0.05904*Math.cos(1*d + 1*l1 + 2*l) + 
+        0.03729*Math.cos(1*d + 2*l1) + 
+        -0.01578*Math.cos(2*d + -4*l1) + 
+        0.01116*Math.cos(2*d + -3*l1 + -2*l) + 
+        -0.14808*Math.cos(2*d + -3*l1 + -1*l) + 
+        -0.41076*Math.cos(2*d + -3*l1) + 
+        -0.02855*Math.cos(2*d + -3*l1 + 1*l) + 
+        0.01517*Math.cos(2*d + -2*l1 + -3*l) + 
+        0.34304*Math.cos(2*d + -2*l1 + -2*l) + 
+        -4.95049*Math.cos(2*d + -2*l1 + -1*l) + 
+        0.02839*Math.cos(2*d + -2*l1 + -2*f) + 
+        -9.88519*Math.cos(2*d + -2*l1) + 
+        -0.65758*Math.cos(2*d + -2*l1 + 1*l) + 
+        -0.04608*Math.cos(2*d + -2*l1 + 2*l) + 
+        0.02334*Math.cos(2*d + -1*l1 + -4*l) + 
+        0.49506*Math.cos(2*d + -1*l1 + -3*l) + 
+        0.01518*Math.cos(2*d + -1*l1 + -2*l + -2*f) + 
+        10.05654*Math.cos(2*d + -1*l1 + -2*l) + 
+        0.03024*Math.cos(2*d + -1*l1 + -2*l + 2*f) + 
+        0.32336*Math.cos(2*d + -1*l1 + -1*l + -2*f) + 
+        -152.14314*Math.cos(2*d + -1*l1 + -1*l) + 
+        0.03734*Math.cos(2*d + -1*l1 + -1*l + 2*f) + 
+        0.65710*Math.cos(2*d + -1*l1 + -2*f) + 
+        -204.59357*Math.cos(2*d + -1*l1) + 
+        0.20942*Math.cos(2*d + -1*l1 + 1*l + -2*f) + 
+        -12.83185*Math.cos(2*d + -1*l1 + 1*l) + 
+        0.01804*Math.cos(2*d + -1*l1 + 2*l + -2*f) + 
+        -0.84883*Math.cos(2*d + -1*l1 + 2*l) + 
+        -0.05850*Math.cos(2*d + -1*l1 + 3*l) + 
+        0.04740*Math.cos(2*d + -5*l) + 
+        0.77854*Math.cos(2*d + -4*l) + 
+        0.02910*Math.cos(2*d + -3*l + -2*f) + 
+        14.40262*Math.cos(2*d + -3*l) + 
+        -0.02008*Math.cos(2*d + -3*l + 2*f) + 
+        0.47263*Math.cos(2*d + -2*l + -2*f) + 
+        246.15768*Math.cos(2*d + -2*l) + 
+        0.77405*Math.cos(2*d + -2*l + 2*f) + 
+        8.75170*Math.cos(2*d + -1*l + -2*f) + 
+        -3699.10468*Math.cos(2*d + -1*l) + 
+        0.59633*Math.cos(2*d + -1*l + 2*f) + 
+        10.32129*Math.cos(2*d + -2*f) + 
+        -2955.96651*Math.cos(2*d) + 
+        0.03143*Math.cos(2*d + 2*f) + 
+        -0.01866*Math.cos(2*d + 1*l + -4*f) + 
+        4.13118*Math.cos(2*d + 1*l + -2*f) + 
+        -170.73274*Math.cos(2*d + 1*l) + 
+        0.28399*Math.cos(2*d + 2*l + -2*f) + 
+        -10.44472*Math.cos(2*d + 2*l) + 
+        0.01811*Math.cos(2*d + 3*l + -2*f) + 
+        -0.66968*Math.cos(2*d + 3*l) + 
+        -0.04422*Math.cos(2*d + 4*l) + 
+        0.01417*Math.cos(2*d + 1*l1 + -4*l) + 
+        0.16858*Math.cos(2*d + 1*l1 + -3*l) + 
+        0.14368*Math.cos(2*d + 1*l1 + -2*l) + 
+        -0.04736*Math.cos(2*d + 1*l1 + -1*l + -2*f) + 
+        24.20935*Math.cos(2*d + 1*l1 + -1*l) + 
+        -0.13572*Math.cos(2*d + 1*l1 + -2*f) + 
+        30.82498*Math.cos(2*d + 1*l1) + 
+        -0.05527*Math.cos(2*d + 1*l1 + 1*l + -2*f) + 
+        2.61650*Math.cos(2*d + 1*l1 + 1*l) + 
+        0.21252*Math.cos(2*d + 1*l1 + 2*l) + 
+        0.01704*Math.cos(2*d + 1*l1 + 3*l) + 
+        -0.01036*Math.cos(2*d + 2*l1 + -3*l) + 
+        -0.10888*Math.cos(2*d + 2*l1 + -2*l) + 
+        -0.01072*Math.cos(2*d + 2*l1 + -1*l + -2*f) + 
+        2.35380*Math.cos(2*d + 2*l1 + -1*l) + 
+        0.14764*Math.cos(2*d + 2*l1) + 
+        0.01389*Math.cos(3*d + -2*l1 + -1*l) + 
+        -0.01048*Math.cos(3*d + -2*l1) + 
+        0.05293*Math.cos(3*d + -1*l1 + -2*l) + 
+        0.25561*Math.cos(3*d + -1*l1 + -1*l) + 
+        0.01441*Math.cos(3*d + -1*l1 + -2*f) + 
+        -0.15708*Math.cos(3*d + -1*l1) + 
+        -0.04843*Math.cos(3*d + -3*l) + 
+        0.86243*Math.cos(3*d + -2*l) + 
+        3.25823*Math.cos(3*d + -1*l) + 
+        0.20099*Math.cos(3*d + -2*f) + 
+        -1.41893*Math.cos(3*d) + 
+        -0.06545*Math.cos(3*d + 1*l) + 
+        0.03810*Math.cos(3*d + 1*l1 + -2*l) + 
+        -0.21259*Math.cos(3*d + 1*l1 + -1*l) + 
+        -0.10766*Math.cos(3*d + 1*l1) + 
+        -0.01448*Math.cos(3*d + 1*l1 + 1*l) + 
+        -0.01571*Math.cos(4*d + -3*l1 + -1*l) + 
+        -0.10834*Math.cos(4*d + -2*l1 + -2*l) + 
+        -0.27906*Math.cos(4*d + -2*l1 + -1*l) + 
+        -0.12806*Math.cos(4*d + -2*l1) + 
+        -0.01728*Math.cos(4*d + -2*l1 + 1*l) + 
+        -0.04316*Math.cos(4*d + -1*l1 + -3*l) + 
+        -1.89710*Math.cos(4*d + -1*l1 + -2*l) + 
+        -0.02698*Math.cos(4*d + -1*l1 + -1*l + -2*f) + 
+        -3.95812*Math.cos(4*d + -1*l1 + -1*l) + 
+        -0.05789*Math.cos(4*d + -1*l1 + -2*f) + 
+        -1.57145*Math.cos(4*d + -1*l1) + 
+        -0.20286*Math.cos(4*d + -1*l1 + 1*l) + 
+        -0.02079*Math.cos(4*d + -1*l1 + 2*l) + 
+        -0.02939*Math.cos(4*d + -4*l) + 
+        -0.51423*Math.cos(4*d + -3*l) + 
+        -0.07982*Math.cos(4*d + -2*l + -2*f) + 
+        -21.63627*Math.cos(4*d + -2*l) + 
+        0.01483*Math.cos(4*d + -2*l + 2*f) + 
+        -0.32176*Math.cos(4*d + -1*l + -2*f) + 
+        -34.78245*Math.cos(4*d + -1*l) + 
+        -0.50793*Math.cos(4*d + -2*f) + 
+        -11.64993*Math.cos(4*d) + 
+        0.01938*Math.cos(4*d + 1*l + -2*f) + 
+        -1.42255*Math.cos(4*d + 1*l) + 
+        -0.13922*Math.cos(4*d + 2*l) + 
+        -0.01243*Math.cos(4*d + 3*l) + 
+        -0.02399*Math.cos(4*d + 1*l1 + -3*l) + 
+        0.23696*Math.cos(4*d + 1*l1 + -2*l) + 
+        0.01551*Math.cos(4*d + 1*l1 + -1*l + -2*f) + 
+        0.57881*Math.cos(4*d + 1*l1 + -1*l) + 
+        0.01969*Math.cos(4*d + 1*l1 + -2*f) + 
+        0.24453*Math.cos(4*d + 1*l1) + 
+        0.03682*Math.cos(4*d + 1*l1 + 1*l) + 
+        0.02658*Math.cos(4*d + 2*l1 + -2*l) + 
+        0.01868*Math.cos(4*d + 2*l1 + -1*l) + 
+        0.01149*Math.cos(5*d + -3*l) + 
+        0.04591*Math.cos(5*d + -2*l) + 
+        -0.02436*Math.cos(6*d + -1*l1 + -3*l) + 
+        -0.06678*Math.cos(6*d + -1*l1 + -2*l) + 
+        -0.05191*Math.cos(6*d + -1*l1 + -1*l) + 
+        -0.01709*Math.cos(6*d + -1*l1) + 
+        -0.18316*Math.cos(6*d + -3*l) + 
+        -0.42250*Math.cos(6*d + -2*l) + 
+        -0.28663*Math.cos(6*d + -1*l) + 
+        -0.08587*Math.cos(6*d) + 
+        -0.01420*Math.cos(6*d + 1*l);
+
+    eclon = (Math.PI/180) * ((
+        218.3164591 + 481267.88134236 * T - 0.0013268 * T2 + T3 / 538841 - T4 / 65194000 +
+        (-411.60287*Math.sin(2*f) + 
+        39.53393*Math.sin(1*l + -2*f) + 
+        22639.55000*Math.sin(1*l) + 
+        -45.10032*Math.sin(1*l + 2*f) + 
+        -1.37259*Math.sin(2*l + -2*f) + 
+        769.02326*Math.sin(2*l) + 
+        -3.99767*Math.sin(2*l + 2*f) + 
+        36.12364*Math.sin(3*l) + 
+        1.93367*Math.sin(4*l) + 
+        -0.66940*Math.sin(1*l1 + -3*l) + 
+        -9.67938*Math.sin(1*l1 + -2*l) + 
+        -147.32654*Math.sin(1*l1 + -1*l) + 
+        -666.44186*Math.sin(1*l1) + 
+        -109.38419*Math.sin(1*l1 + 1*l) + 
+        -7.63041*Math.sin(1*l1 + 2*l) + 
+        -0.54594*Math.sin(1*l1 + 3*l) + 
+        -2.56813*Math.sin(2*l1 + -1*l) + 
+        -7.44804*Math.sin(2*l1) + 
+        -1.16177*Math.sin(2*l1 + 1*l) + 
+        -0.55694*Math.sin(1*d + -1*l1) + 
+        -1.75296*Math.sin(1*d + -2*l) + 
+        -18.58467*Math.sin(1*d + -1*l) + 
+        -0.58332*Math.sin(1*d + -2*f) + 
+        -124.98806*Math.sin(1*d) + 
+        -8.45308*Math.sin(1*d + 1*l) + 
+        -0.58399*Math.sin(1*d + 2*l) + 
+        1.07773*Math.sin(1*d + 1*l1 + -1*l) + 
+        17.95512*Math.sin(1*d + 1*l1) + 
+        1.26186*Math.sin(1*d + 1*l1 + 1*l) + 
+        7.37173*Math.sin(2*d + -2*l1 + -1*l) + 
+        8.05076*Math.sin(2*d + -2*l1) + 
+        0.75173*Math.sin(2*d + -2*l1 + 1*l) + 
+        8.60582*Math.sin(2*d + -1*l1 + -2*l) + 
+        205.44315*Math.sin(2*d + -1*l1 + -1*l) + 
+        2.14619*Math.sin(2*d + -1*l1 + -2*f) + 
+        164.73458*Math.sin(2*d + -1*l1) + 
+        14.53078*Math.sin(2*d + -1*l1 + 1*l) + 
+        1.17704*Math.sin(2*d + -1*l1 + 2*l) + 
+        0.94827*Math.sin(2*d + -4*l) + 
+        13.19400*Math.sin(2*d + -3*l) + 
+        -0.56065*Math.sin(2*d + -2*l + -2*f) + 
+        211.65487*Math.sin(2*d + -2*l) + 
+        -0.53572*Math.sin(2*d + -2*l + 2*f) + 
+        4586.43061*Math.sin(2*d + -1*l) + 
+        -9.36601*Math.sin(2*d + -1*l + 2*f) + 
+        55.17801*Math.sin(2*d + -2*f) + 
+        2369.91227*Math.sin(2*d) + 
+        -5.74170*Math.sin(2*d + 2*f) + 
+        -6.38325*Math.sin(2*d + 1*l + -2*f) + 
+        191.95575*Math.sin(2*d + 1*l) + 
+        -0.99023*Math.sin(2*d + 1*l + 2*f) + 
+        14.37964*Math.sin(2*d + 2*l) + 
+        1.05949*Math.sin(2*d + 3*l) + 
+        2.48897*Math.sin(2*d + 1*l1 + -2*l) + 
+        -28.39810*Math.sin(2*d + 1*l1 + -1*l) + 
+        -1.43724*Math.sin(2*d + 1*l1 + -2*f) + 
+        -24.35910*Math.sin(2*d + 1*l1) + 
+        -2.91464*Math.sin(2*d + 1*l1 + 1*l) + 
+        -2.52138*Math.sin(2*d + 2*l1 + -1*l) + 
+        -1.22412*Math.sin(3*d + -2*l) + 
+        -3.20968*Math.sin(3*d + -1*l) + 
+        2.73198*Math.sin(4*d + -1*l1 + -2*l) + 
+        4.37416*Math.sin(4*d + -1*l1 + -1*l) + 
+        1.87083*Math.sin(4*d + -1*l1) + 
+        1.18682*Math.sin(4*d + -3*l) + 
+        30.77247*Math.sin(4*d + -2*l) + 
+        38.42974*Math.sin(4*d + -1*l) + 
+        13.89903*Math.sin(4*d) + 
+        1.97772*Math.sin(4*d + 1*l) + 
+        -0.63523*Math.sin(4*d + 1*l1 + -1*l) + 
+        0.57156*Math.sin(6*d + -2*l)) / 3600) % 360);
+
+    eclat = (Math.PI/180) * (((18461.40000*Math.sin(1*f) + 
+        -6.29664*Math.sin(3*f) + 
+        2.79871*Math.sin(1*l + -3*f) + 
+        999.70079*Math.sin(1*l + -1*f) + 
+        1010.17430*Math.sin(1*l + 1*f) + 
+        -1.01941*Math.sin(1*l + 3*f) + 
+        31.75985*Math.sin(2*l + -1*f) + 
+        61.91229*Math.sin(2*l + 1*f) + 
+        1.58131*Math.sin(3*l + -1*f) + 
+        3.98407*Math.sin(3*l + 1*f) + 
+        -0.79322*Math.sin(1*l1 + -2*l + -1*f) + 
+        -6.73173*Math.sin(1*l1 + -1*l + -1*f) + 
+        -5.63260*Math.sin(1*l1 + -1*l + 1*f) + 
+        -4.83983*Math.sin(1*l1 + -1*f) + 
+        -6.46036*Math.sin(1*l1 + 1*f) + 
+        -5.07614*Math.sin(1*l1 + 1*l + -1*f) + 
+        -5.31151*Math.sin(1*l1 + 1*l + 1*f) + 
+        -0.63884*Math.sin(1*l1 + 2*l + 1*f) + 
+        -4.80578*Math.sin(1*d + -1*f) + 
+        -5.36844*Math.sin(1*d + 1*f) + 
+        -0.58893*Math.sin(1*d + 1*l + -1*f) + 
+        -0.66741*Math.sin(1*d + 1*l + 1*f) + 
+        0.80426*Math.sin(1*d + 1*l1 + -1*f) + 
+        0.80263*Math.sin(1*d + 1*l1 + 1*f) + 
+        1.08587*Math.sin(2*d + -2*l1 + -1*f) + 
+        0.65025*Math.sin(2*d + -1*l1 + -2*l + -1*f) + 
+        7.43488*Math.sin(2*d + -1*l1 + -1*l + -1*f) + 
+        8.86853*Math.sin(2*d + -1*l1 + -1*l + 1*f) + 
+        29.57794*Math.sin(2*d + -1*l1 + -1*f) + 
+        7.95891*Math.sin(2*d + -1*l1 + 1*f) + 
+        1.76606*Math.sin(2*d + -1*l1 + 1*l + -1*f) + 
+        1.13466*Math.sin(2*d + -1*l1 + 1*l + 1*f) + 
+        1.51564*Math.sin(2*d + -3*l + -1*f) + 
+        15.56635*Math.sin(2*d + -2*l + -1*f) + 
+        -1.62443*Math.sin(2*d + -2*l + 1*f) + 
+        166.57528*Math.sin(2*d + -1*l + -1*f) + 
+        199.48515*Math.sin(2*d + -1*l + 1*f) + 
+        2.18637*Math.sin(2*d + -3*f) + 
+        623.65783*Math.sin(2*d + -1*f) + 
+        117.26161*Math.sin(2*d + 1*f) + 
+        33.35743*Math.sin(2*d + 1*l + -1*f) + 
+        15.12165*Math.sin(2*d + 1*l + 1*f) + 
+        2.14618*Math.sin(2*d + 2*l + -1*f) + 
+        1.51976*Math.sin(2*d + 2*l + 1*f) + 
+        -0.79105*Math.sin(2*d + 1*l1 + -1*l + -1*f) + 
+        -1.31788*Math.sin(2*d + 1*l1 + -1*l + 1*f) + 
+        -12.09470*Math.sin(2*d + 1*l1 + -1*f) + 
+        -1.26433*Math.sin(2*d + 1*l1 + 1*f) + 
+        -0.82275*Math.sin(2*d + 1*l1 + 1*l + -1*f) + 
+        0.59580*Math.sin(4*d + -1*l1 + -1*l + -1*f) + 
+        0.63371*Math.sin(4*d + -2*l + -1*f) + 
+        2.41389*Math.sin(4*d + -2*l + 1*f) + 
+        6.57962*Math.sin(4*d + -1*l + -1*f) + 
+        2.99850*Math.sin(4*d + -1*l + 1*f) + 
+        3.67449*Math.sin(4*d + -1*f) + 
+        1.19188*Math.sin(4*d + 1*f)) / 3600) % 360);
+
+    nutationlon = eclon + (Math.PI/180) * .001 * (
+        (-4.77767 - 0.00484*T) * Math.sin((125.0446 + -1934.1362*T + 0.0021 * T2)*Math.PI/180) +
+        -0.36631 * Math.sin((200.9329 + 72001.5397*T + 0.0006 * T2)*Math.PI/180) +
+        -0.06317 * Math.sin((76.6333 + 962535.7627*T + -0.0027 * T2)*Math.PI/180) +
+        0.05728 * Math.sin((250.0891 + -3868.2724*T + 0.0042 * T2)*Math.PI/180) +
+        (0.03961 - 0.00009*T) * Math.sin((357.5291 + 35999.0503*T + -0.0002 * T2)*Math.PI/180) +
+        0.01978 * Math.sin((134.9634 + 477198.8676*T + 0.009 * T2)*Math.PI/180) +
+        -0.01436 * Math.sin((195.9911 + 143999.6402*T + 0.0003 * T2)*Math.PI/180) +
+        -0.01072 * Math.sin((311.5888 + 964469.8989*T + -0.0047 * T2)*Math.PI/180) +
+        -0.00836 * Math.sin((211.5967 + 1439734.6303*T + 0.0063 * T2)*Math.PI/180) +
+        0.00603 * Math.sin((203.4038 + 36002.4894*T + 0.0008 * T2)*Math.PI/180) +
+        -0.00439 * Math.sin((259.2630 + -413335.3554*T + 0.0123 * T2)*Math.PI/180) +
+        0.00358 * Math.sin((75.8883 + 73935.6758*T + -0.0015 * T2)*Math.PI/180) +
+        0.00342 * Math.sin((301.6699 + 485336.8951*T + -0.0117 * T2)*Math.PI/180) );
+
+    meanobl = (Math.PI/180) * (23.43928 - .013*T + .000000555*T3 + .00000000014*T4);
+
+    nutationobl = meanobl + (Math.PI/180) * .001 * (
+        (2.55625 + 0.00025*T) * Math.cos((125.0446 + -1934.1362*T + 0.0021 * T2)*Math.PI/180) +
+        (0.15933 - 0.00009*T) * Math.cos((200.9329 + 72001.5397*T + 0.0006 * T2)*Math.PI/180) +
+        0.02714 * Math.cos((76.6333 + 962535.7627*T + -0.0027 * T2)*Math.PI/180) +
+        -0.02486 * Math.cos((250.0891 + -3868.2724*T + 0.0042 * T2)*Math.PI/180) +
+        0.00622 * Math.cos((195.9911 + 143999.6402*T + 0.0003 * T2)*Math.PI/180) +
+        0.00556 * Math.cos((311.5888 + 964469.8989*T + -0.0047 * T2)*Math.PI/180) +
+        0.00358 * Math.cos((211.5967 + 1439734.6303*T + 0.0063 * T2)*Math.PI/180) );
+
+
+    declin = Math.asin(Math.sin(nutationobl) * Math.sin(nutationlon) * Math.cos(eclat) +
+                       Math.cos(nutationobl) * Math.sin(eclat));
+
+    if (Math.cos(nutationlon) == 0) { rasc = 0; } else {
+        rasc = Math.atan((Math.cos(nutationobl) * Math.sin(nutationlon) * Math.cos(eclat) -
+                          Math.sin(nutationobl) * Math.sin(eclat)) / 
+                         (Math.cos(nutationlon) * Math.cos(eclat)));
+    }
+    if (Math.cos(nutationlon) < 0) { rasc += Math.PI; }
+
+    gmst = (18.697374558 + 24.06570982441908 * 36525 * T) % 24;
+    geolong = rasc - gmst * Math.PI/12 + 2*Math.PI;
+
+    return [centerdist, declin * 180/Math.PI, geolong * 180/Math.PI];
 }
+
+function moondist() {
+    mc = mooncoords();
+    centerdist = mc[0];
+    radius = radiusat(latitude);
+    angle = sphereangle(geocentriclat(latitude), longitude, mc[1], mc[2]);
+    return Math.sqrt(centerdist*centerdist + radius*radius
+                     - 2*centerdist*radius * Math.cos(angle)) - 1738;
+}
+    
+function moondistplus() {
+    mc = mooncoords();
+    r = radiusat(latitude, longitude)
+    angle = sphereangle(geocentriclat(latitude), longitude, mc[1], mc[2]);
+    if (angle < Math.acos(r/mc[0])) {
+        return moondist();
+    } else {
+        return Math.sqrt(mc[0]*mc[0] - r*r) +
+               lambertdist(latitude, longitude, mc[1], mc[2])*(1-(Math.acos(r/mc[0])/angle)) - 1738;
+    }
+}
+
+function logms(x) {
+    s = Math.abs(x)/x;
+    y = Math.abs(x);
+    console.log(x + ": " + s*Math.floor(y) + " " + Math.floor((y * 60) % 60) + " " + ((y * 3600) % 60));
+}
+
 navigator.geolocation.getCurrentPosition(function(pos) {
+    latitude = pos.coords.latitude;
+    longitude = pos.coords.longitude;
     vias.forEach(function (via) {
-        thetas[via[0]] = calctheta(pos.coords.latitude, pos.coords.longitude, via[1], via[2]);
-        viaelt = document.createElement("h3");
+        viaelt = document.createElement("h2");
         viaelt.id = via[0];
-        viaelt.innerHTML = via[0] + ": " + lambertdist(pos.coords.latitude, pos.coords.longitude,
-                                                       via[1], via[2]).toFixed(1) + "km";
-        celt = document.createElement("canvas");
-        celt.setAttribute("width", "100px"); celt.setAttribute("height", "100px");
-        viaelt.appendChild(celt);
+        viaelt.innerHTML = via[0] + ": " + lambertdist(latitude, longitude,
+                                                       via[1], via[2]).toFixed(0) + " km";
         document.body.appendChild(viaelt);
     });
+    moonelt = document.createElement("h2");
+    moonelt.id = "moon";
+    moonelt.innerHTML = "Moon (center-to-center): " + mooncoords()[0].toFixed(0) + " km";
+    document.body.appendChild(moonelt);
+    moonelt2 = document.createElement("h2");
+    moonelt2.id = "moon2";
+    moonelt2.innerHTML = "Moon (straight line from you to lunar surface): " + moondist().toFixed(0) + " km";
+    document.body.appendChild(moonelt2);
+    moonelt3 = document.createElement("h2");
+    moonelt3.id = "moon3";
+    moonelt3.innerHTML = "Moon (avoiding passing through earth): " + moondistplus().toFixed(0) + " km";
+    document.body.appendChild(moonelt3);
 });
-window.addEventListener("deviceorientation", function(event) {
-    if (event.absolute) { vias.forEach(function(via) {
-        canvas_arrow(document.getElementById(via[0]).getElementsByTagName("canvas")[0].getContext("2d"),
-                     event.alpha * Math.PI/180);
-    });}
-    console.log(event.alpha); }, true);
+
+setInterval(function() {
+    moonelt = document.getElementById("moon");
+    moonelt.innerHTML = "Moon (center-to-center): " + mooncoords()[0].toFixed(0) + " km";
+    moonelt2 = document.getElementById("moon2");
+    moonelt2.innerHTML = "Moon (straight line from you to lunar surface): " + moondist().toFixed(0) + " km";
+    moonelt3 = document.getElementById("moon3");
+    moonelt3.innerHTML = "Moon (avoiding passing through earth): " + moondistplus().toFixed(0) + " km";
+}, 500);
+
 </script>
 <style type="text/css">
-body { text-align: center;}
-canvas { display: inline-block; vertical-align: center;}</style>
+body { text-align: center; }
+</style>
 </head><body>
-<h4 id="youarehere"></h4>
 </body></html>
