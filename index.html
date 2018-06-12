@@ -1,0 +1,79 @@
+<!DOCTYPE HTML>
+<html><head><title>Milliarium Electronicum</title>
+<script type="text/javascript">
+vias = [
+["New York", 40.768056, -73.981944],
+["London", 51.507414, -0.127681],
+["Paris", 48.853410, 2.348803],
+["Tokyo", 35.684048, 139.774488]];
+thetas = {};
+function lambertdist(inlat0, inlon0, inlat1, inlon1) {
+    const A_WGS84 = 6378137;
+    const F_WGS84 = 1/298.257223563;
+    lat0 = inlat0 * Math.PI / 180;
+    lon0 = inlon0 * Math.PI / 180;
+    lat1 = inlat1 * Math.PI / 180;
+    lon1 = inlon1 * Math.PI / 180;
+    p0 = Math.atan( (1-F_WGS84)*Math.tan(lat0));
+    p1 = Math.atan( (1-F_WGS84)*Math.tan(lat1));
+    rho = Math.acos(Math.sin(p0)*Math.sin(p1)+Math.cos(p0)*Math.cos(p1)*Math.cos(lon1-lon0));
+    x = (rho - Math.sin(rho)) * (Math.sin(p0)+Math.sin(p1))**2 / Math.cos(rho/2)**2;
+    y = (rho + Math.sin(rho)) * (Math.sin(p0)-Math.sin(p1))**2 / Math.sin(rho/2)**2;
+    return A_WGS84 * (rho - F_WGS84 * (x+y) / 8) / 1000;
+}
+function spheredist(inlat0, inlon0, inlat1, inlon1) {
+    lat0 = inlat0 * Math.PI / 180;
+    lon0 = inlon0 * Math.PI / 180;
+    lat1 = inlat1 * Math.PI / 180;
+    lon1 = inlon1 * Math.PI / 180;
+    rho = Math.acos(Math.sin(lat0)*Math.sin(lat1)+Math.cos(lat0)*Math.cos(lat1)*Math.cos(lon1-lon0));
+    return 6371 * rho;
+}
+function calctheta(inlat0, inlon0, inlat1, inlon1) {
+    lat0 = inlat0 * Math.PI / 180;
+    lon0 = inlon0 * Math.PI / 180;
+    lat1 = inlat1 * Math.PI / 180;
+    lon1 = inlon1 * Math.PI / 180;
+    return Math.atan2(Math.cos(lat1)*Math.sin(lon1-lon0),
+                      Math.cos(lat0)*Math.sin(lat1) - Math.sin(lat0)*Math.cos(lat1)*Math.cos(lon1-lon0));
+}
+function canvas_arrow(context, angle){
+    var headlen = 10;   // length of head in pixels
+    fromx = 50; fromy = 50;
+    tox = 50+50*Math.cos(angle);
+    toy = 50+50*Math.sin(angle);
+    context.clearRect(0, 0, 100, 100);
+    context.beginPath();
+    context.moveTo(fromx, fromy);
+    context.lineTo(tox, toy);
+    context.lineTo(tox-headlen*Math.cos(angle-Math.PI/6),toy-headlen*Math.sin(angle-Math.PI/6));
+    context.moveTo(tox, toy);
+    context.lineTo(tox-headlen*Math.cos(angle+Math.PI/6),toy-headlen*Math.sin(angle+Math.PI/6));
+    context.stroke();
+}
+navigator.geolocation.getCurrentPosition(function(pos) {
+    vias.forEach(function (via) {
+        thetas[via[0]] = calctheta(pos.coords.latitude, pos.coords.longitude, via[1], via[2]);
+        viaelt = document.createElement("h3");
+        viaelt.id = via[0];
+        viaelt.innerHTML = via[0] + ": " + lambertdist(pos.coords.latitude, pos.coords.longitude,
+                                                       via[1], via[2]).toFixed(1) + "km";
+        celt = document.createElement("canvas");
+        celt.setAttribute("width", "100px"); celt.setAttribute("height", "100px");
+        viaelt.appendChild(celt);
+        document.body.appendChild(viaelt);
+    });
+});
+window.addEventListener("deviceorientation", function(event) {
+    if (event.absolute) { vias.forEach(function(via) {
+        canvas_arrow(document.getElementById(via[0]).getElementsByTagName("canvas")[0].getContext("2d"),
+                     event.alpha * Math.PI/180);
+    });}
+    console.log(event.alpha); }, true);
+</script>
+<style type="text/css">
+body { text-align: center;}
+canvas { display: inline-block; vertical-align: center;}</style>
+</head><body>
+<h4 id="youarehere"></h4>
+</body></html>
