@@ -1,6 +1,16 @@
 <!DOCTYPE HTML>
 <html><head><title>Milliarium Electronicum</title>
 <script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-19998781-1']);
+  _gaq.push(['_trackPageview']);
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+</script>
+<script type="text/javascript">
 vias = [
   ["New York", 40.768056, -73.981944],
   ["London", 51.507414, -0.127681],
@@ -374,42 +384,15 @@ function mooncoords() {
         3.67449*Math.sin(4*d + -1*f) + 
         1.19188*Math.sin(4*d + 1*f)) / 3600) % 360);
 
-    nutationlon = eclon + (Math.PI/180) * .001 * (
-        (-4.77767 - 0.00484*T) * Math.sin((125.0446 + -1934.1362*T + 0.0021 * T2)*Math.PI/180) +
-        -0.36631 * Math.sin((200.9329 + 72001.5397*T + 0.0006 * T2)*Math.PI/180) +
-        -0.06317 * Math.sin((76.6333 + 962535.7627*T + -0.0027 * T2)*Math.PI/180) +
-        0.05728 * Math.sin((250.0891 + -3868.2724*T + 0.0042 * T2)*Math.PI/180) +
-        (0.03961 - 0.00009*T) * Math.sin((357.5291 + 35999.0503*T + -0.0002 * T2)*Math.PI/180) +
-        0.01978 * Math.sin((134.9634 + 477198.8676*T + 0.009 * T2)*Math.PI/180) +
-        -0.01436 * Math.sin((195.9911 + 143999.6402*T + 0.0003 * T2)*Math.PI/180) +
-        -0.01072 * Math.sin((311.5888 + 964469.8989*T + -0.0047 * T2)*Math.PI/180) +
-        -0.00836 * Math.sin((211.5967 + 1439734.6303*T + 0.0063 * T2)*Math.PI/180) +
-        0.00603 * Math.sin((203.4038 + 36002.4894*T + 0.0008 * T2)*Math.PI/180) +
-        -0.00439 * Math.sin((259.2630 + -413335.3554*T + 0.0123 * T2)*Math.PI/180) +
-        0.00358 * Math.sin((75.8883 + 73935.6758*T + -0.0015 * T2)*Math.PI/180) +
-        0.00342 * Math.sin((301.6699 + 485336.8951*T + -0.0117 * T2)*Math.PI/180) );
+    obl = (Math.PI/180) * (23.43928 - .013*T + .000000555*T3 + .00000000014*T4);
 
-    meanobl = (Math.PI/180) * (23.43928 - .013*T + .000000555*T3 + .00000000014*T4);
+    declin = Math.asin(Math.sin(obl) * Math.sin(eclon) * Math.cos(eclat) +
+                       Math.cos(obl) * Math.sin(eclat));
 
-    nutationobl = meanobl + (Math.PI/180) * .001 * (
-        (2.55625 + 0.00025*T) * Math.cos((125.0446 + -1934.1362*T + 0.0021 * T2)*Math.PI/180) +
-        (0.15933 - 0.00009*T) * Math.cos((200.9329 + 72001.5397*T + 0.0006 * T2)*Math.PI/180) +
-        0.02714 * Math.cos((76.6333 + 962535.7627*T + -0.0027 * T2)*Math.PI/180) +
-        -0.02486 * Math.cos((250.0891 + -3868.2724*T + 0.0042 * T2)*Math.PI/180) +
-        0.00622 * Math.cos((195.9911 + 143999.6402*T + 0.0003 * T2)*Math.PI/180) +
-        0.00556 * Math.cos((311.5888 + 964469.8989*T + -0.0047 * T2)*Math.PI/180) +
-        0.00358 * Math.cos((211.5967 + 1439734.6303*T + 0.0063 * T2)*Math.PI/180) );
-
-
-    declin = Math.asin(Math.sin(nutationobl) * Math.sin(nutationlon) * Math.cos(eclat) +
-                       Math.cos(nutationobl) * Math.sin(eclat));
-
-    if (Math.cos(nutationlon) == 0) { rasc = 0; } else {
-        rasc = Math.atan((Math.cos(nutationobl) * Math.sin(nutationlon) * Math.cos(eclat) -
-                          Math.sin(nutationobl) * Math.sin(eclat)) / 
-                         (Math.cos(nutationlon) * Math.cos(eclat)));
+    if (Math.cos(eclon) == 0) { rasc = 0; } else {
+        rasc = Math.atan2((Math.cos(obl) * Math.sin(eclon) * Math.cos(eclat) -
+                           Math.sin(obl) * Math.sin(eclat)), (Math.cos(eclon) * Math.cos(eclat)));
     }
-    if (Math.cos(nutationlon) < 0) { rasc += Math.PI; }
 
     gmst = (18.697374558 + 24.06570982441908 * 36525 * T) % 24;
     geolong = rasc - gmst * Math.PI/12 + 2*Math.PI;
@@ -428,20 +411,27 @@ function moondist() {
     
 function moondistplus() {
     mc = mooncoords();
-    r = radiusat(latitude, longitude)
-    angle = sphereangle(geocentriclat(latitude), longitude, mc[1], mc[2]);
-    if (angle < Math.acos(r/mc[0])) {
+    angle = sphereangle(geocentriclat(latitude), longitude, mc[1], mc[2]); 
+    if (angle < Math.acos(6371/mc[0])) {
         return moondist();
     } else {
-        return Math.sqrt(mc[0]*mc[0] - r*r) +
-               lambertdist(latitude, longitude, mc[1], mc[2])*(1-(Math.acos(r/mc[0])/angle)) - 1738;
+        lat1 = geocentriclat(latitude) * Math.PI/180;
+        lon1 = longitude * Math.PI/180;
+        latm = mc[1] * Math.PI/180;
+        lonm = mc[2] * Math.PI/180;
+        a1 = Math.atan2(Math.sin(lonm-lon1),
+                        Math.cos(lat1)*Math.tan(latm)-Math.sin(lat1)*Math.cos(lonm-lon1));
+        a0 = Math.asin(Math.sin(a1)*Math.cos(lat1));
+        s01 = Math.atan2(Math.tan(lat1), Math.cos(a1));
+        s = angle - Math.acos(6371/mc[0]) + s01;
+        moonriselat = Math.asin(Math.cos(a0)*Math.sin(s));
+        moonriselon = lon1 - Math.atan2(Math.sin(a0)*Math.sin(s01), Math.cos(s01)) +
+                      Math.atan2(Math.sin(a0)*Math.sin(s), Math.cos(s));
+        moonriser = radiusat(moonriselat * 180/Math.PI);
+        return Math.sqrt(mc[0]*mc[0] - moonriser*moonriser)
+               + lambertdist(latitude, longitude, moonriselat * 180/Math.PI, moonriselon * 180/Math.PI)
+               - 1738;
     }
-}
-
-function logms(x) {
-    s = Math.abs(x)/x;
-    y = Math.abs(x);
-    console.log(x + ": " + s*Math.floor(y) + " " + Math.floor((y * 60) % 60) + " " + ((y * 3600) % 60));
 }
 
 navigator.geolocation.getCurrentPosition(function(pos) {
@@ -456,25 +446,13 @@ navigator.geolocation.getCurrentPosition(function(pos) {
     });
     moonelt = document.createElement("h2");
     moonelt.id = "moon";
-    moonelt.innerHTML = "Moon (center-to-center): " + mooncoords()[0].toFixed(0) + " km";
+    moonelt.innerHTML = "Moon: " + moondistplus().toFixed(0) + " km";
     document.body.appendChild(moonelt);
-    moonelt2 = document.createElement("h2");
-    moonelt2.id = "moon2";
-    moonelt2.innerHTML = "Moon (straight line from you to lunar surface): " + moondist().toFixed(0) + " km";
-    document.body.appendChild(moonelt2);
-    moonelt3 = document.createElement("h2");
-    moonelt3.id = "moon3";
-    moonelt3.innerHTML = "Moon (avoiding passing through earth): " + moondistplus().toFixed(0) + " km";
-    document.body.appendChild(moonelt3);
 });
 
 setInterval(function() {
     moonelt = document.getElementById("moon");
-    moonelt.innerHTML = "Moon (center-to-center): " + mooncoords()[0].toFixed(0) + " km";
-    moonelt2 = document.getElementById("moon2");
-    moonelt2.innerHTML = "Moon (straight line from you to lunar surface): " + moondist().toFixed(0) + " km";
-    moonelt3 = document.getElementById("moon3");
-    moonelt3.innerHTML = "Moon (avoiding passing through earth): " + moondistplus().toFixed(0) + " km";
+    moonelt.innerHTML = "Moon: " + moondistplus().toFixed(0) + " km";
 }, 500);
 
 </script>
@@ -482,4 +460,5 @@ setInterval(function() {
 body { text-align: center; }
 </style>
 </head><body>
+<div style="position: fixed; bottom: 5px; right: 5px;"><a href="notes.html">notes</a></div>
 </body></html>
