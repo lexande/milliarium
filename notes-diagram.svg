@@ -5,11 +5,11 @@
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
-   id="svg8"
-   version="1.1"
-   viewBox="0 0 500 200"
+   width="500mm"
    height="200mm"
-   width="500mm">
+   viewBox="0 0 500 200"
+   version="1.1"
+   id="svg8">
   <defs
      id="defs2" />
   <metadata
@@ -25,34 +25,36 @@
     </rdf:RDF>
   </metadata>
   <g
-     transform="translate(0,-97)"
-     id="layer1">
+     id="layer1"
+     transform="translate(0,-97)">
     <circle
-       r="49.500038"
-       cy="197"
-       cx="100.00001"
+       style="opacity:1;fill:#d5f6ff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.99992317;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="path815-3"
-       style="opacity:1;fill:#d5f6ff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.99992317;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+       cx="100.00001"
+       cy="197"
+       r="49.500038" />
     <ellipse
-       ry="19.500063"
-       rx="19.500061"
-       style="opacity:1;fill:#e6e6e6;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.99987555;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       id="circle832"
+       cy="197"
        cx="420"
-       cy="197" />
+       id="circle832"
+       style="opacity:1;fill:#e6e6e6;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.99987555;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       rx="19.500061"
+       ry="19.500063" />
     <path
-       id="path847"
-       d="m 57.731321,171.22565 c 8.694966,-14.22888 24.372778,-23.72569 42.268689,-23.72569 l 5.99857,0.27272 294.46178,46.20478"
-       style="opacity:1;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#ff0000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
-    <path
-       id="path843"
-       d="M 400.46036,193.97746 420,197"
-       style="opacity:1;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+       style="opacity:1;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#ff0000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 57.731321,171.22565 c 8.694966,-14.22888 24.372778,-23.72569 42.268689,-23.72569 l 5.99857,0.27272 296.59591,39.89133"
+       id="path847" />
     <circle
-       r="2.5"
-       cy="170.97099"
-       cx="58.087799"
+       style="opacity:1;fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.31288338;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="path849"
-       style="opacity:1;fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.31288338;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+       cx="58.087799"
+       cy="170.97099"
+       r="2.5" />
   </g>
+  <circle
+     style="opacity:1;fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.31288338;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     id="path849-3"
+     cx="402.8161"
+     cy="90.803932"
+     r="2.5" />
 </svg>
