@@ -419,15 +419,7 @@ function mooncoords() {
             librlat * 180/Math.PI, librlon * 180/Math.PI, axisangle * 180/Math.PI];
 }
 
-function moondist(earthlat, earthlon, mc) {
-    centerdist = mc[0];
-    radius = radiusat(earthlat);
-    angle = sphereangle(geocentriclat(earthlat), earthlon, mc[1], mc[2]);
-    return Math.sqrt(centerdist*centerdist + radius*radius
-                     - 2*centerdist*radius * Math.cos(angle)) - 1738;
-}
-
-function moondist2(earthlat, earthlon, moonlat, moonlon, mc) {
+function moondist(earthlat, earthlon, moonlat, moonlon, mc) {
     centerdist = mc[0];
     eradius = radiusat(earthlat);
     earthlatg = geocentriclat(earthlat);
@@ -455,37 +447,12 @@ function moondist2(earthlat, earthlon, moonlat, moonlon, mc) {
                   2 * eradius * Math.sin(eangle) * 1738 * Math.sin(mangle) * Math.cos(totalincl));
     return Math.sqrt(a*a + b*b);
 }
- 
-function moondistplus() {
-    mc = mooncoords();
-    angle = sphereangle(geocentriclat(latitude), longitude, mc[1], mc[2]); 
-    if (angle < Math.acos(6371/mc[0])) {
-        return moondist(latitude, longitude, mc);
-    } else {
-        lat1 = geocentriclat(latitude) * Math.PI/180;
-        lon1 = longitude * Math.PI/180;
-        latm = mc[1] * Math.PI/180;
-        lonm = mc[2] * Math.PI/180;
-        a1 = Math.atan2(Math.sin(lonm-lon1),
-                        Math.cos(lat1)*Math.tan(latm)-Math.sin(lat1)*Math.cos(lonm-lon1));
-        a0 = Math.asin(Math.sin(a1)*Math.cos(lat1));
-        s01 = Math.atan2(Math.tan(lat1), Math.cos(a1));
-        s = angle - Math.acos(6371/mc[0]) + s01;
-        moonriselat = Math.asin(Math.cos(a0)*Math.sin(s));
-        moonriselon = lon1 - Math.atan2(Math.sin(a0)*Math.sin(s01), Math.cos(s01)) +
-                      Math.atan2(Math.sin(a0)*Math.sin(s), Math.cos(s));
-        moonriser = radiusat(moonriselat * 180/Math.PI);
-        return moondist(latitude, longitude, mc)
-               + lambertdist(latitude, longitude, moonriselat * 180/Math.PI, moonriselon * 180/Math.PI)
-               - 1738;
-    }
-}
 
-function moondistplus2(moonlat, moonlon) {
+function moondistplus(moonlat, moonlon) {
     mc = mooncoords();
     angle = sphereangle(geocentriclat(latitude), longitude, mc[1], mc[2]);
     if (angle < Math.acos(6371/mc[0])) {
-        return moondist2(latitude, longitude, moonlat, moonlon, mc);
+        return moondist(latitude, longitude, moonlat, moonlon, mc);
     } else {
         lat1 = geocentriclat(latitude) * Math.PI/180;
         lon1 = longitude * Math.PI/180;
@@ -500,7 +467,7 @@ function moondistplus2(moonlat, moonlon) {
         moonriselon = lon1 - Math.atan2(Math.sin(a0)*Math.sin(s01), Math.cos(s01)) +
                       Math.atan2(Math.sin(a0)*Math.sin(s), Math.cos(s));
         moonriser = radiusat(moonriselat * 180/Math.PI);
-        return moondist2(latitude, longitude, moonlat, moonlon, mc)
+        return moondist(latitude, longitude, moonlat, moonlon, mc)
                + lambertdist(latitude, longitude, moonriselat * 180/Math.PI, moonriselon * 180/Math.PI)
                - 1738;
     }
@@ -517,24 +484,18 @@ navigator.geolocation.getCurrentPosition(function(pos) {
                                                        via[1], via[2]).toFixed(0) + " km";
         document.body.appendChild(viaelt);
     });
-//    moonelt = document.createElement("h2");
-//    moonelt.id = "moon";
-//    moonelt.innerHTML = "Moon: " + moondistplus().toFixed(0) + " km";
-//    document.body.appendChild(moonelt);
     moonvias.forEach(function (mvia) {
         viaelt = document.createElement("h2");
         viaelt.id = mvia[0];
-        viaelt.innerHTML = mvia[0] + ": " + moondistplus2(mvia[1], mvia[2]).toFixed(0) + " km";
+        viaelt.innerHTML = mvia[0] + ": " + moondistplus(mvia[1], mvia[2]).toFixed(0) + " km";
         document.body.appendChild(viaelt);
     });
 });
 
 setInterval(function() {
-//    moonelt = document.getElementById("moon");
-//    moonelt.innerHTML = "Moon: " + moondistplus().toFixed(0) + " km";
     moonvias.forEach(function (mvia) {
         viaelt = document.getElementById(mvia[0]);
-        viaelt.innerHTML = mvia[0] + ": " + moondistplus2(mvia[1], mvia[2]).toFixed(0) + " km";
+        viaelt.innerHTML = mvia[0] + ": " + moondistplus(mvia[1], mvia[2]).toFixed(0) + " km";
     });
 
 }, 500);
