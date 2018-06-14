@@ -436,11 +436,11 @@ function moondist(earthlat, earthlon, moonlat, moonlon, mc) {
     eangle = sphereangle(earthlatg, earthlon, mc[1], mc[2]);
     mangle = sphereangle(moonlat, moonlon, mc[3], mc[4]);
     // inclinations
-    eincl = Math.atan2(Math.sin(elon - melon), Math.cos(melat) * Math.tan(elat) -
-                                               Math.sin(melat) * Math.cos(elon - melon));
-    mincl = - Math.atan2(Math.sin(mlon - emlon), Math.cos(emlat) * Math.tan(mlat) -
-                                                 Math.sin(emlat) * Math.cos(mlon - emlon));
-    totalincl = eincl + mincl + (mc[5] * Math.PI/180);
+    eincl = Math.atan2(Math.sin(elon - emlon), Math.cos(emlat) * Math.tan(elat) -
+                                               Math.sin(emlat) * Math.cos(elon - emlon));
+    mincl = - Math.atan2(Math.sin(mlon - melon), Math.cos(melat) * Math.tan(mlat) -
+                                                 Math.sin(melat) * Math.cos(mlon - melon));
+    totalincl = mincl + (mc[5] * Math.PI/180) - eincl;
     a = centerdist - eradius * Math.cos(eangle) - 1738 * Math.cos(mangle);
     b = Math.sqrt(eradius * eradius * Math.sin(eangle) * Math.sin(eangle) +
                   1738 * 1738 * Math.sin(mangle) * Math.sin(mangle) -
