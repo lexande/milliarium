@@ -450,29 +450,45 @@ function moondist(earthlat, earthlon, moonlat, moonlon, mc) {
 
 function moondistplus(moonlat, moonlon) {
     mc = mooncoords();
-    angle = sphereangle(geocentriclat(latitude), longitude, mc[1], mc[2]);
+    earthlatg = geocentriclat(latitude);
+    // coordinates in radians
+    elat = earthlatg * Math.PI/180;
+    elon = longitude * Math.PI/180;
+    mlat = moonlat * Math.PI/180;
+    mlon = moonlon * Math.PI/180;
+    emlat = mc[1] * Math.PI/180;
+    emlon = mc[2] * Math.PI/180;
+    melat = mc[3] * Math.PI/180;
+    melon = mc[4] * Math.PI/180;
+
+    mangle = sphereangle(moonlat, moonlon, mc[3], mc[4]);
+    emangle = Math.atan2(1738 * Math.sin(mangle), mc[0] - 1738 * Math.cos(mangle));
+    incl = (mc[5] * Math.PI/180) - Math.atan2(Math.sin(mlon - emlon), Math.cos(emlat) * Math.tan(mlat) -
+                                              Math.sin(emlat) * Math.cos(mlon - emlon));
+    [emplat, emplon] = gcalong(emlat, emlon, incl, emangle);
+    angle = sphereangle(earthlatg, longitude, emplat * 180/Math.PI, emplon * 180/Math.PI);
     if (angle < Math.acos(6371/mc[0])) {
         return moondist(latitude, longitude, moonlat, moonlon, mc);
     } else {
-        lat1 = geocentriclat(latitude) * Math.PI/180;
-        lon1 = longitude * Math.PI/180;
-        latm = mc[1] * Math.PI/180;
-        lonm = mc[2] * Math.PI/180;
-        a1 = Math.atan2(Math.sin(lonm-lon1),
-                        Math.cos(lat1)*Math.tan(latm)-Math.sin(lat1)*Math.cos(lonm-lon1));
-        a0 = Math.asin(Math.sin(a1)*Math.cos(lat1));
-        s01 = Math.atan2(Math.tan(lat1), Math.cos(a1));
-        s = angle - Math.acos(6371/mc[0]) + s01;
-        moonriselat = Math.asin(Math.cos(a0)*Math.sin(s));
-        moonriselon = lon1 - Math.atan2(Math.sin(a0)*Math.sin(s01), Math.cos(s01)) +
-                      Math.atan2(Math.sin(a0)*Math.sin(s), Math.cos(s));
-        moonriser = radiusat(moonriselat * 180/Math.PI);
+        moonrisealpha = Math.atan2(Math.sin(emlon-elon),
+                                   Math.cos(elat)*Math.tan(emlat)-Math.sin(elat)*Math.cos(emlon-elon));
+        moonrisesigma = angle - Math.acos(6371/mc[0]);
+        [moonriselat, moonriselon] = gcalong(elat, elon, moonrisealpha, moonrisesigma);
         return moondist(latitude, longitude, moonlat, moonlon, mc)
                + lambertdist(latitude, longitude, moonriselat * 180/Math.PI, moonriselon * 180/Math.PI)
                - 1738;
     }
 }
 
+function gcalong(inlat, inlon, alpha, sigma) {
+    // inputs and outputs in radians
+    a0 = Math.asin(Math.sin(alpha) * Math.cos(inlat));
+    s01 = Math.atan2(Math.tan(inlat), Math.cos(alpha));
+    returnlat = Math.asin(Math.cos(a0) * Math.sin(s01 + sigma));
+    returnlon = inlon - Math.atan2(Math.sin(a0)*Math.sin(s01), Math.cos(s01))
+                      + Math.atan2(Math.sin(a0)*Math.sin(s01 + sigma), Math.cos(s01 + sigma));
+    return [returnlat, returnlon];
+}
 
 navigator.geolocation.getCurrentPosition(function(pos) {
     latitude = pos.coords.latitude;
