@@ -49,8 +49,7 @@ function geocentriclat(geodeticlat) {
 
 function radiusat(inlat) {
     var lat = geocentriclat(inlat);
-    return Math.sqrt(A_WGS84*A_WGS84*(Math.cos(lat)*Math.cos(lat) +
-                                      (1-F_WGS84)*(1-F_WGS84)*Math.sin(lat)*Math.sin(lat))) / 1000;
+    return Math.sqrt(A_WGS84*A_WGS84*(Math.cos(lat)*Math.cos(lat) + (1-F_WGS84)*(1-F_WGS84)*Math.sin(lat)*Math.sin(lat))) / 1000;
 }                     
 
 function mooncoords() {
@@ -384,13 +383,11 @@ function mooncoords() {
 
     var obl = (Math.PI/180) * (23.43928 - .013*T + .000000555*T3 + .00000000014*T4);
 
-    var declin = Math.asin(Math.sin(obl) * Math.sin(eclon) * Math.cos(eclat) +
-                           Math.cos(obl) * Math.sin(eclat));
+    var declin = Math.asin(Math.sin(obl) * Math.sin(eclon) * Math.cos(eclat) + Math.cos(obl) * Math.sin(eclat));
 
     var rasc;
     if (Math.cos(eclon) == 0) { rasc = 0; } else {
-        rasc = Math.atan2((Math.cos(obl) * Math.sin(eclon) * Math.cos(eclat) -
-                           Math.sin(obl) * Math.sin(eclat)), (Math.cos(eclon) * Math.cos(eclat)));
+        rasc = Math.atan2((Math.cos(obl) * Math.sin(eclon) * Math.cos(eclat) - Math.sin(obl) * Math.sin(eclat)), (Math.cos(eclon) * Math.cos(eclat)));
     }
 
     var gmst = (18.697374558 + 24.06570982441908 * 36525 * T) % 24;
@@ -399,16 +396,12 @@ function mooncoords() {
     var longnode = (125.044555 - 1934.1361849*T + 0.0020762*T2 + T3 / 467410 - T4 / 60616000)*Math.PI/180;
     var I = (5553.6/3600) * (Math.PI/180);
 
-    var librlat = Math.asin(-Math.sin(eclon - longnode) * Math.cos(eclat) * Math.sin(I) -
-                            Math.sin(eclat) * Math.cos(I));
-    var librlon = Math.atan2(Math.sin(eclon - longnode) * Math.cos(eclat) * Math.cos(I) + 
-                             Math.sin(eclat) * Math.sin(I), Math.cos(eclon - longnode) * Math.cos(eclat))
-                  - f;
+    var librlat = Math.asin(-Math.sin(eclon - longnode) * Math.cos(eclat) * Math.sin(I) - Math.sin(eclat) * Math.cos(I));
+    var librlon = Math.atan2(Math.sin(eclon - longnode) * Math.cos(eclat) * Math.cos(I) + Math.sin(eclat) * Math.sin(I), Math.cos(eclon - longnode) * Math.cos(eclat)) - f;
 
     var x = Math.sin(I) * Math.sin(longnode);
     var y = Math.sin(I) * Math.cos(longnode) * Math.cos(obl) - Math.cos(I) * Math.sin(obl);
-    var axisangle = Math.asin(Math.sqrt(x*x + y*y) * Math.cos(rasc - Math.atan2(x,y)) 
-                              / Math.cos(librlat));
+    var axisangle = Math.asin(Math.sqrt(x*x + y*y) * Math.cos(rasc - Math.atan2(x,y)) / Math.cos(librlat));
 
     return [centerdist, declin, geolong, librlat, librlon, axisangle];
 }
@@ -421,15 +414,11 @@ function moondist(inelat, elon, mlat, mlon, mc) {
     var eangle = sphereangle(elat, elon, emlat, emlon);
     var mangle = sphereangle(mlat, mlon, melat, melon);
     // inclinations
-    var eincl = Math.atan2(Math.sin(elon - emlon), Math.cos(emlat) * Math.tan(elat) -
-                                                   Math.sin(emlat) * Math.cos(elon - emlon));
-    var mincl = - Math.atan2(Math.sin(mlon - melon), Math.cos(melat) * Math.tan(mlat) -
-                                                     Math.sin(melat) * Math.cos(mlon - melon));
+    var eincl = Math.atan2(Math.sin(elon - emlon), Math.cos(emlat) * Math.tan(elat) - Math.sin(emlat) * Math.cos(elon - emlon));
+    var mincl = - Math.atan2(Math.sin(mlon - melon), Math.cos(melat) * Math.tan(mlat) - Math.sin(melat) * Math.cos(mlon - melon));
     var totalincl = mincl + (mc[5] * Math.PI/180) - eincl;
     var a = centerdist - eradius * Math.cos(eangle) - 1738 * Math.cos(mangle);
-    var b = Math.sqrt(eradius * eradius * Math.sin(eangle) * Math.sin(eangle) +
-                      1738 * 1738 * Math.sin(mangle) * Math.sin(mangle) -
-                      2 * eradius * Math.sin(eangle) * 1738 * Math.sin(mangle) * Math.cos(totalincl));
+    var b = Math.sqrt(eradius * eradius * Math.sin(eangle) * Math.sin(eangle) + 1738 * 1738 * Math.sin(mangle) * Math.sin(mangle) - 2 * eradius * Math.sin(eangle) * 1738 * Math.sin(mangle) * Math.cos(totalincl));
     return Math.sqrt(a*a + b*b);
 }
 
@@ -441,21 +430,16 @@ function moondistplus(mlat, mlon) {
 
     var mangle = sphereangle(mlat, mlon, melat, melon);
     var emangle = Math.atan2(1738 * Math.sin(mangle), mc[0] - 1738 * Math.cos(mangle));
-    var incl = axisangle - Math.atan2(Math.sin(mlon - emlon), Math.cos(emlat) * Math.tan(mlat) -
-                                                              Math.sin(emlat) * Math.cos(mlon - emlon));
+    var incl = axisangle - Math.atan2(Math.sin(mlon - emlon), Math.cos(emlat) * Math.tan(mlat) - Math.sin(emlat) * Math.cos(mlon - emlon));
     var [emplat, emplon] = gcalong(emlat, emlon, incl, emangle);
     var angle = sphereangle(elat, elon, emplat, emplon);
     if (angle < Math.acos(6371 / centerdist)) {
         return moondist(latitude, elon, mlat, mlon, mc);
     } else {
-        var moonrisealpha = Math.atan2(Math.sin(emlon - elon),
-                                       Math.cos(elat) * Math.tan(emlat)
-                                       - Math.sin(elat) * Math.cos(emlon - elon));
+        var moonrisealpha = Math.atan2(Math.sin(emlon - elon), Math.cos(elat) * Math.tan(emlat) - Math.sin(elat) * Math.cos(emlon - elon));
         var moonrisesigma = angle - Math.acos(6371/centerdist);
         var [moonriselat, moonriselon] = gcalong(elat, elon, moonrisealpha, moonrisesigma);
-        return moondist(moonriselat, moonriselon, mlat, mlon, mc)
-               + lambertdist(latitude, elon, moonriselat, moonriselon)
-               - 1738;
+        return moondist(moonriselat, moonriselon, mlat, mlon, mc) + lambertdist(latitude, elon, moonriselat, moonriselon);
     }
 }
 
@@ -463,8 +447,7 @@ function gcalong(inlat, inlon, alpha, sigma) {
     var a0 = Math.asin(Math.sin(alpha) * Math.cos(inlat));
     var s01 = Math.atan2(Math.tan(inlat), Math.cos(alpha));
     var returnlat = Math.asin(Math.cos(a0) * Math.sin(s01 + sigma));
-    var returnlon = inlon - Math.atan2(Math.sin(a0)*Math.sin(s01), Math.cos(s01))
-                          + Math.atan2(Math.sin(a0)*Math.sin(s01 + sigma), Math.cos(s01 + sigma));
+    var returnlon = inlon - Math.atan2(Math.sin(a0)*Math.sin(s01), Math.cos(s01)) + Math.atan2(Math.sin(a0)*Math.sin(s01 + sigma), Math.cos(s01 + sigma));
     return [returnlat, returnlon];
 }
 
@@ -474,15 +457,13 @@ navigator.geolocation.getCurrentPosition(function(pos) {
     vias.forEach(function (via) {
         var viaelt = document.createElement("h2");
         viaelt.id = via[0];
-        viaelt.innerHTML = via[0] + ": " + lambertdist(latitude, longitude, via[1] * Math.PI/180,
-                                                       via[2] * Math.PI/180).toFixed(0) + " km";
+        viaelt.innerHTML = via[0] + ": " + lambertdist(latitude, longitude, via[1] * Math.PI/180, via[2] * Math.PI/180).toFixed(0) + " km";
         document.body.appendChild(viaelt);
     });
     moonvias.forEach(function (mvia) {
         var viaelt = document.createElement("h2");
         viaelt.id = mvia[0];
-        viaelt.innerHTML = mvia[0] + ": " + moondistplus(mvia[1] * Math.PI/180,
-                                                         mvia[2] * Math.PI/180).toFixed(0) + " km";
+        viaelt.innerHTML = mvia[0] + ": " + moondistplus(mvia[1] * Math.PI/180, mvia[2] * Math.PI/180).toFixed(0) + " km";
         document.body.appendChild(viaelt);
     });
 });
@@ -490,8 +471,7 @@ navigator.geolocation.getCurrentPosition(function(pos) {
 setInterval(function() {
     moonvias.forEach(function (mvia) {
         var viaelt = document.getElementById(mvia[0]);
-        viaelt.innerHTML = mvia[0] + ": " + moondistplus(mvia[1] * Math.PI/180,
-                                                         mvia[2] * Math.PI/180).toFixed(0) + " km";
+        viaelt.innerHTML = mvia[0] + ": " + moondistplus(mvia[1] * Math.PI/180, mvia[2] * Math.PI/180).toFixed(0) + " km";
     });
 
 }, 500);
