@@ -454,24 +454,45 @@ function gcalong(inlat, inlon, alpha, sigma) {
 navigator.geolocation.getCurrentPosition(function(pos) {
     latitude = pos.coords.latitude * Math.PI/180;
     longitude = pos.coords.longitude * Math.PI/180;
+    container = document.createElement("div");
+    container.id = "container";
     vias.forEach(function (via) {
-        var viaelt = document.createElement("h2");
+        var viaelt = document.createElement("div");
         viaelt.id = via[0];
-        viaelt.innerHTML = via[0] + ": " + lambertdist(latitude, longitude, via[1] * Math.PI/180, via[2] * Math.PI/180).toFixed(0) + " km";
-        document.body.appendChild(viaelt);
+        viaelt.style.display = "inline";
+        var vianameelt = document.createElement("span");
+        var viadistelt = document.createElement("span");
+        vianameelt.setAttribute("class", "name");
+        vianameelt.innerHTML = via[0] + ":";
+        viadistelt.setAttribute("class", "dist");
+        viadistelt.innerHTML = lambertdist(latitude, longitude, via[1] * Math.PI/180, via[2] * Math.PI/180).toFixed(0) + " km";
+        viaelt.appendChild(vianameelt);
+        viaelt.appendChild(viadistelt);
+        container.appendChild(viaelt);
+        container.appendChild(document.createElement("br"));
     });
     moonvias.forEach(function (mvia) {
-        var viaelt = document.createElement("h2");
+        var viaelt = document.createElement("div");
         viaelt.id = mvia[0];
-        viaelt.innerHTML = mvia[0] + ": " + moondistplus(mvia[1] * Math.PI/180, mvia[2] * Math.PI/180).toFixed(0) + " km";
-        document.body.appendChild(viaelt);
+        var vianameelt = document.createElement("span");
+        var viadistelt = document.createElement("span");
+        vianameelt.setAttribute("class", "name");
+        vianameelt.innerHTML = mvia[0] + ":";
+        viadistelt.setAttribute("class", "dist");
+        viadistelt.id = mvia[0] + "dist";
+        viadistelt.innerHTML = moondistplus(mvia[1] * Math.PI/180, mvia[2] * Math.PI/180).toFixed(0) + " km";
+        viaelt.appendChild(vianameelt);
+        viaelt.appendChild(viadistelt);
+        container.appendChild(viaelt);
+        container.appendChild(document.createElement("br"));
     });
+    document.body.appendChild(container);
 });
 
 setInterval(function() {
     moonvias.forEach(function (mvia) {
-        var viaelt = document.getElementById(mvia[0]);
-        viaelt.innerHTML = mvia[0] + ": " + moondistplus(mvia[1] * Math.PI/180, mvia[2] * Math.PI/180).toFixed(0) + " km";
+        var viaelt = document.getElementById(mvia[0] + "dist");
+        viaelt.innerHTML = moondistplus(mvia[1] * Math.PI/180, mvia[2] * Math.PI/180).toFixed(0) + " km";
     });
 
 }, 500);
@@ -479,6 +500,9 @@ setInterval(function() {
 </script>
 <style type="text/css">
 body { text-align: center; }
+#container { position: fixed; left: 50%; width: 12em; margin-left: -6em; font-size: x-large; line-height: 2em}
+.name { left: 0; position: absolute; font-weight: bold; }
+.dist { right: 0; position: absolute; }
 </style>
 </head><body>
 <div style="position: fixed; bottom: 5px; right: 5px;"><a href="notes.html">notes</a></div>
