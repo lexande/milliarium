@@ -11,18 +11,24 @@
   })();
 </script>
 <script type="text/javascript">
-const vias = [
-  ["New York", 40.768056, -73.981944],
-  ["Tokyo", 35.684048, 139.774488],
-  ["London", 51.507414, -0.127681],
-  ["Paris", 48.853410, 2.348803],
-  ["Beijing", 39.89900, 116.39164],
-  ["Moskva", 55.75577, 37.617680]
+const defaultvias = [
+  ["New York", 40.768056, -73.981944, "e"],
+  ["Tokyo", 35.684048, 139.774488, "e"],
+  ["London", 51.507414, -0.127681, "e"],
+  ["Paris", 48.853410, 2.348803, "e"],
+  ["Beijing", 39.89900, 116.39164, "e"],
+  ["Moskva", 55.75577, 37.617680, "e"],
+  ["Apollo 11", 0.67409, 23.47298, "m"],
+  ["Apollo 17", 20.18809, 30.77475, "m"]
 ];
-const moonvias = [
-  ["Apollo 11", 0.67409, 23.47298],
-  ["Apollo 17", 20.18809, 30.77475]
-];
+
+var storage = window.localStorage;
+var vias = [];
+if (storage.getItem("vias")) {
+    vias = JSON.parse(storage.getItem("vias"));
+} else {
+    vias = defaultvias.slice();
+}
 
 const A_WGS84 = 6378137;
 const F_WGS84 = 1/298.257223563;
@@ -451,9 +457,7 @@ function gcalong(inlat, inlon, alpha, sigma) {
     return [returnlat, returnlon];
 }
 
-navigator.geolocation.getCurrentPosition(function(pos) {
-    latitude = pos.coords.latitude * Math.PI/180;
-    longitude = pos.coords.longitude * Math.PI/180;
+function maketable() {
     container = document.createElement("div");
     container.id = "container";
     vias.forEach(function (via) {
@@ -465,38 +469,85 @@ navigator.geolocation.getCurrentPosition(function(pos) {
         vianameelt.setAttribute("class", "name");
         vianameelt.innerHTML = via[0] + ":";
         viadistelt.setAttribute("class", "dist");
-        viadistelt.innerHTML = lambertdist(latitude, longitude, via[1] * Math.PI/180, via[2] * Math.PI/180).toFixed(0) + " km";
-        viaelt.appendChild(vianameelt);
-        viaelt.appendChild(viadistelt);
-        container.appendChild(viaelt);
-        container.appendChild(document.createElement("br"));
-    });
-    moonvias.forEach(function (mvia) {
-        var viaelt = document.createElement("div");
-        viaelt.id = mvia[0];
-        var vianameelt = document.createElement("span");
-        var viadistelt = document.createElement("span");
-        vianameelt.setAttribute("class", "name");
-        vianameelt.innerHTML = mvia[0] + ":";
-        viadistelt.setAttribute("class", "dist");
-        viadistelt.id = mvia[0] + "dist";
-        viadistelt.innerHTML = moondistplus(mvia[1] * Math.PI/180, mvia[2] * Math.PI/180).toFixed(0) + " km";
+        viadistelt.id = via[0] + "dist";
+        if (via[3] == "e") {
+            viadistelt.innerHTML = lambertdist(latitude, longitude, via[1] * Math.PI/180, via[2] * Math.PI/180).toFixed(0) + " km";
+        } else if (via[3] == "m") {
+            viadistelt.innerHTML = moondistplus(via[1] * Math.PI/180, via[2] * Math.PI/180).toFixed(0) + " km";
+        }
         viaelt.appendChild(vianameelt);
         viaelt.appendChild(viadistelt);
         container.appendChild(viaelt);
         container.appendChild(document.createElement("br"));
     });
     document.body.appendChild(container);
+}
+
+function addclick() {
+    document.getElementById("addremove").innerHTML = '<form id="addform">name: <input type="text" name="name" id="addname"> latitude: <input type="text" name="lat" id="addlat"> longitude: <input type="text" name="lon" id="addlon"> <input type="radio" name="body" value="e" checked>earth <input type="radio" name="body" value="m">moon <a href="javascript:" onclick="addsubmit();">add</a></form>';
+}
+
+function addsubmit() {
+    if (document.querySelector('input[name="body"]:checked').value == "m" &&
+        Math.abs(document.getElementById("addlon").value) > 90) {
+        document.getElementById("addremove").innerHTML = 'points on far side of moon not currently supported <a href="javascript:" onclick="restoreaddremovetext();">dismiss</a>';
+    } else {
+        vias.push([
+          document.getElementById("addname").value,
+          document.getElementById("addlat").value,
+          document.getElementById("addlon").value,
+          document.querySelector('input[name="body"]:checked').value]);
+        storage.setItem("vias", JSON.stringify(vias));
+        document.body.removeChild(document.getElementById("container"));
+        maketable();
+        restoreaddremovetext();
+    }
+}
+
+function restoreaddremovetext() {
+    document.getElementById("addremove").innerHTML = '<a href="javascript:addclick()">add</a> <a href="javascript:removeclick()">remove</a> <a href="javascript:resetclick()">reset</a>';
+}
+
+function removeclick() {
+    function makeremovefn(i) {
+        function f() { remove(i) }
+        return f;
+    }
+    for (var i=0; i < vias.length; i++) {
+        document.getElementById(vias[i][0]).onclick = makeremovefn(i);
+    }
+    document.getElementById("addremove").innerHTML = "click a point to remove";
+}
+
+function remove(vianum) {
+    vias.splice(vianum, 1);
+    storage.setItem("vias", JSON.stringify(vias));
+    document.body.removeChild(document.getElementById("container"));
+    maketable();
+    restoreaddremovetext();
+}
+
+function resetclick() {
+    storage.clear();
+    vias = defaultvias.slice();
+    document.body.removeChild(document.getElementById("container"));
+    maketable();
+}
+
+navigator.geolocation.getCurrentPosition(function(pos) {
+    latitude = pos.coords.latitude * Math.PI/180;
+    longitude = pos.coords.longitude * Math.PI/180;
+    maketable();
 });
 
 setInterval(function() {
-    moonvias.forEach(function (mvia) {
-        var viaelt = document.getElementById(mvia[0] + "dist");
-        viaelt.innerHTML = moondistplus(mvia[1] * Math.PI/180, mvia[2] * Math.PI/180).toFixed(0) + " km";
+    vias.forEach(function (via) {
+        if (via[3] == "m") {
+            var viaelt = document.getElementById(via[0] + "dist");
+            viaelt.innerHTML = moondistplus(via[1] * Math.PI/180, via[2] * Math.PI/180).toFixed(0) + " km";
+        }
     });
-
 }, 500);
-
 </script>
 <style type="text/css">
 body { text-align: center; }
@@ -505,5 +556,6 @@ body { text-align: center; }
 .dist { right: 0; position: absolute; }
 </style>
 </head><body>
+<div id="addremove" style="position: fixed; bottom: 5px; left: 5px;"><a href="javascript:addclick()">add</a> <a href="javascript:removeclick()">remove</a> <a href="javascript:resetclick()">reset</a></div>
 <div style="position: fixed; bottom: 5px; right: 5px;"><a href="notes.html">notes</a></div>
 </body></html>
