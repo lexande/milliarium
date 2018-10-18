@@ -34,7 +34,7 @@ const A_WGS84 = 6378137;
 const F_WGS84 = 1/298.257223563;
 
 var latitude;
-var logitude;
+var longitude;
 
 function lambertdist(lat0, lon0, lat1, lon1) {
     var p0 = Math.atan((1-F_WGS84)*Math.tan(lat0));
@@ -538,7 +538,7 @@ navigator.geolocation.getCurrentPosition(function(pos) {
     latitude = pos.coords.latitude * Math.PI/180;
     longitude = pos.coords.longitude * Math.PI/180;
     maketable();
-});
+}, console.log, {maximumAge:100000});
 
 setInterval(function() {
     vias.forEach(function (via) {
